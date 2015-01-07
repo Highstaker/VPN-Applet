@@ -2,14 +2,11 @@
 #! -*- coding: utf-8 -*-
 
 import subprocess, os, glob
-
 from gi.repository import Gtk, GLib
 from gi.repository import AppIndicator3 as appindicator
-
 from country_codes import COUNTRIES
 
 CONFIG_FILES_PATH="/home/highstaker/Документы/ibvpn_openvpn/"
-# CONFIG_FILES=[]
 SIGNAL_FILE_PATH="/tmp/"
 SIGNAL_FILENAME="openVPN_aliver_command.txt"
 
@@ -55,11 +52,24 @@ class menuRefresher:
         # create a menu
         menu = Gtk.Menu()
 
+        menu_items = Gtk.MenuItem("External IP: \n" + myip) 
+        menu.append(menu_items)        
+        menu_items.show()
+
         menu_items = Gtk.MenuItem("Country code: \n" + myCountry) 
         menu.append(menu_items)        
         menu_items.show()
 
         menu_items = Gtk.MenuItem("Country: \n" + myCountryName)
+        menu.append(menu_items)        
+        menu_items.show()
+
+        menu_items = Gtk.MenuItem("-"*20)
+        menu.append(menu_items)        
+        menu_items.show()
+
+        menu_items = Gtk.MenuItem( "Disable VPN" )
+        menu_items.connect("activate",self.change_server,"stop")
         menu.append(menu_items)        
         menu_items.show()
 
