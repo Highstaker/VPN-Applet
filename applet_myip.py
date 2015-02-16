@@ -15,6 +15,9 @@ class menuRefresher:
     #an IP is saved to this variable when it is changed. If the IP is the same, there is no point of doing other tasks like getting country etc
     IP_buf = ""
 
+    #a flag, whether to show label with IP in tray or not
+    show_label=False
+
     def change_server(self,widget,config_filename):
         pass
         print("[DEBUG]Change server to " + config_filename)
@@ -26,6 +29,20 @@ class menuRefresher:
 
         return True
 
+    def refresh_label(self,ind,myip):
+        if self.show_label:
+            ind.set_label(myip,"")
+        else:
+            print("[DEBUG]Set empty label")
+            ind.set_label("","")
+
+        return True
+
+    def toggle_label(self,widget,ind,myip):
+        self.show_label= not self.show_label
+        self.refresh_label(ind,myip)
+
+        return True
 
     def set_indicating_menus(self,ind):
         """Sets the values in menus on each refresh"""
@@ -73,6 +90,11 @@ class menuRefresher:
         menu.append(menu_items)        
         menu_items.show()
 
+        menu_items = Gtk.MenuItem( "Toggle Label" )
+        menu_items.connect("activate",self.toggle_label,ind,myip)
+        menu.append(menu_items)        
+        menu_items.show()
+
         menu_items = Gtk.MenuItem("Exit") 
         menu_items.connect("activate",Gtk.main_quit)
         menu.append(menu_items)        
@@ -94,10 +116,11 @@ class menuRefresher:
 
         ind.set_menu(menu)
 
-        ind.set_label(myip,"")
+        self.refresh_label(ind,myip)
+
         ind.set_icon_full(flagIconFilename,myCountry)
 
-        subprocess.Popen(['notify-send', "You external IP has been changed", \
+        subprocess.Popen(['notify-send', "Your external IP has changed", \
             "New IP: " + myip + "\nCountry: " + myCountryName])
 
         return True
