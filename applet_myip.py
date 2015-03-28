@@ -22,17 +22,11 @@ class menuRefresher:
 	#a flag showing that an IP has already been set. Prevents threads that got it later from assgning it to cur_IP for the second time
 	flag_IP_already_set = False
 
-	#a list of IP-asking threads
-	#threads = []
-
 	#how often, in seconds, we need to refresh the IP and indicator menus
 	REFRESH_TIMEOUT = 5
 
 	#handle to the indicator
 	hIndicator = None
-
-	#the current IP. Used by threads
-	#cur_IP = ""
 
 	#an IP is saved to this variable when it is changed. If the IP is the same, there is no point of doing other tasks like getting country etc
 	IP_buf = ""
@@ -50,6 +44,21 @@ class menuRefresher:
 		f.close()
 
 		return True
+
+	def get_country(self,ip):
+
+		getter_process = subprocess.Popen(["whois", ip],stdout=subprocess.PIPE)
+
+		ipCountry = getter_process.communicate()[0].decode(encoding="ascii", errors="ignore")
+		ipCountry = [line for line in ipCountry.split("\n") if (("country" in line) or ("Country" in line))]    
+
+		if not ipCountry:
+			return ""
+
+		ipCountry = ipCountry[0]
+		ipCountry = ipCountry.replace(" ","").replace("\t","").replace("country:","").replace("Country:","")
+
+		return ipCountry
 
 	def refresh_label(self,ind,myip):
 		if self.show_label:
@@ -78,8 +87,8 @@ class menuRefresher:
 			self.IP_buf = myip
 
 		print("[DEBUG]Getting country")
-		# myCountry = get_country(myip) #country CODE
-		myCountry = "BD" #debug
+		myCountry = self.get_country(myip) #country CODE
+		# myCountry = "BD" #debug
 		myCountryName = [i for i in COUNTRIES if myCountry in i] #name of a country
 		if myCountryName:
 			myCountryName = myCountryName[0][0]
@@ -158,22 +167,22 @@ class menuRefresher:
 		A thread that sets an IP using the method specified in commandline
 		"""
 
-		print("getIP with ", commandline, " started")
+		# print("getIP with ", commandline, " started")
 
 		getter_process = subprocess.Popen(commandline,stdout=subprocess.PIPE)
 		myip = getter_process.communicate()[0].decode(encoding="ascii", errors="ignore").replace("\n","")
+
+		print("getIP with ", commandline, " result:" , myip)
 
 		if isIP(myip):
 			self.lock1.acquire()
 			try:
 				if not self.flag_IP_already_set:
-					# self.cur_IP = myip
 					self.flag_IP_already_set = True
+					self.setIndicatingMenus(myip,self.hIndicator)
 			finally:
 				self.lock1.release()
-				#self.threads = []
 				print("debug2")
-				self.setIndicatingMenus(myip,self.hIndicator)
 
 		print("getIP end")
 
@@ -184,10 +193,13 @@ class menuRefresher:
 		"""
 		Start subprocesses asking for external IP in separate threads
 		"""
-
+		print("askIP start")
 		#list of commandlines that are supposed to return IP as a result
 		IPgettingMethods = [
-		["dig", "+short", "myip.opendns.com", "@resolver1.opendns.com"]
+		["dig", "+short", "myip.opendns.com", "@resolver1.opendns.com"],
+		# ["dig", "+short", "myip.opendns.com", "@resolver1.opendns.com"],
+
+		# ["curl", "-s" ,"http://whatismijnip.nl", "|","cut", "-d", " ", "-f", "5"]
 		]
 
 		for i in IPgettingMethods:
@@ -204,7 +216,7 @@ class menuRefresher:
 		"""
 		print("[DEBUG]startRefreshSequence")
 		self.cur_IP = ""
-		flag_IP_already_set = False
+		self.flag_IP_already_set = False
 		GLib.timeout_add_seconds(self.REFRESH_TIMEOUT,self.askIP,ind,)
 		# refresh_timer = Timer(self.REFRESH_TIMEOUT,self.askIP,(ind,))
 		# refresh_timer.start()
@@ -231,21 +243,6 @@ def isIP(check):
 		return False
 
 	return True
-
-def get_country(ip):
-
-	getter_process = subprocess.Popen(["whois", ip],stdout=subprocess.PIPE)
-
-	ipCountry = getter_process.communicate()[0].decode(encoding="ascii", errors="ignore")
-	ipCountry = [line for line in ipCountry.split("\n") if (("country" in line) or ("Country" in line))]    
-
-	if not ipCountry:
-		return ""
-
-	ipCountry = ipCountry[0]
-	ipCountry = ipCountry.replace(" ","").replace("\t","").replace("country:","").replace("Country:","")
-
-	return ipCountry
 
 def main():
 
