@@ -5,7 +5,7 @@
 ##curl -s http://whatismijnip.nl |cut -d " " -f 5
 
 import subprocess, os, glob
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk, GLib, GObject
 from gi.repository import AppIndicator3 as appindicator
 from country_codes import COUNTRIES
 from threading import Thread, Timer, Lock
@@ -245,6 +245,8 @@ def isIP(check):
 	return True
 
 def main():
+
+	GObject.threads_init()
 
 	ind = appindicator.Indicator.new (
 						"External_IP_applet",
