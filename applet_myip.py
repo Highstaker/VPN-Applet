@@ -10,6 +10,7 @@ from gi.repository import AppIndicator3 as appindicator
 from country_codes import COUNTRIES
 from threading import Thread, Timer, Lock
 import socket
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 CONFIG_FILES_PATH="/home/highstaker/Документы/ibvpn_openvpn/"
 SIGNAL_FILE_PATH="/tmp/"
@@ -18,9 +19,6 @@ SIGNAL_FILENAME="openVPN_aliver_command.txt"
 class menuRefresher:
 
 	lock1 = Lock()
-
-	#a flag showing that an IP has already been set. Prevents threads that got it later from assgning it to cur_IP for the second time
-	flag_IP_already_set = False
 
 	#how often, in seconds, we need to refresh the IP and indicator menus
 	REFRESH_TIMEOUT = 5
@@ -167,26 +165,12 @@ class menuRefresher:
 		A thread that sets an IP using the method specified in commandline
 		"""
 
-		# print("getIP with ", commandline, " started")
-
 		getter_process = subprocess.Popen(commandline,stdout=subprocess.PIPE)
 		myip = getter_process.communicate()[0].decode(encoding="ascii", errors="ignore").replace("\n","")
 
 		print("getIP with ", commandline, " result:" , myip)
 
-		if isIP(myip):
-			self.lock1.acquire()
-			try:
-				if not self.flag_IP_already_set:
-					self.flag_IP_already_set = True
-					GLib.idle_add(self.setIndicatingMenus,myip,self.hIndicator)
-			finally:
-				self.lock1.release()
-				print("debug2")
-
-		print("getIP end")
-
-		return False
+		return myip if isIP(myip) else None
 
 
 	def askIP(self,ind):
@@ -197,15 +181,23 @@ class menuRefresher:
 		#list of commandlines that are supposed to return IP as a result
 		IPgettingMethods = [
 		["dig", "+short", "myip.opendns.com", "@resolver1.opendns.com"],
-		# ["dig", "+short", "myip.opendns.com", "@resolver1.opendns.com"],
-
-		# ["curl", "-s" ,"http://whatismijnip.nl", "|","cut", "-d", " ", "-f", "5"]
+		["curl", "-s", "curlmyip.com"],
+		["curl", "-s" ,"icanhazip.com"],
+		["curl", "-s" ,"ifconfig.me"]
 		]
 
-		for i in IPgettingMethods:
-			th = Thread(target=self.getIP, args=(i,))
-			th.start()
+		def controller_getIP():
+			with ThreadPoolExecutor(len(IPgettingMethods)) as executor:
+				futures = [executor.submit(self.getIP, i) for i in IPgettingMethods]
+				for future in as_completed(futures):
+					ip = future.result()
+					if ip:
+						GLib.idle_add(self.setIndicatingMenus, ip, self.hIndicator)
+						break
 
+
+		th = Thread(target=controller_getIP)
+		th.start()
 
 		return False
 
@@ -216,10 +208,7 @@ class menuRefresher:
 		"""
 		print("[DEBUG]startRefreshSequence")
 		self.cur_IP = ""
-		self.flag_IP_already_set = False
 		GLib.timeout_add_seconds(self.REFRESH_TIMEOUT,self.askIP,ind,)
-		# refresh_timer = Timer(self.REFRESH_TIMEOUT,self.askIP,(ind,))
-		# refresh_timer.start()
 
 		print("[DEBUG]End of startRefreshSequence")
 		return False
