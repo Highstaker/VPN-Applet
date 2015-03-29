@@ -81,8 +81,8 @@ class menuRefresher:
 
 		if myip == self.IP_buf:
 			print("[DEBUG]IP is the same")
-			self.startRefreshSequence(ind)
-			return True
+			GLib.idle_add(self.startRefreshSequence,ind)
+			return False
 		else:
 			self.IP_buf = myip
 
@@ -157,10 +157,10 @@ class menuRefresher:
 		subprocess.Popen(['notify-send', "Your external IP has changed", \
 			"New IP: " + myip + "\nCountry: " + myCountryName])
 
-		self.startRefreshSequence(ind)
+		GLib.idle_add(self.startRefreshSequence,ind)
 
 		print("Menus set!")
-		return True
+		return False
 
 	def getIP(self,commandline):
 		"""
@@ -179,14 +179,14 @@ class menuRefresher:
 			try:
 				if not self.flag_IP_already_set:
 					self.flag_IP_already_set = True
-					self.setIndicatingMenus(myip,self.hIndicator)
+					GLib.idle_add(self.setIndicatingMenus,myip,self.hIndicator)
 			finally:
 				self.lock1.release()
 				print("debug2")
 
 		print("getIP end")
 
-		return True
+		return False
 
 
 	def askIP(self,ind):
@@ -222,7 +222,7 @@ class menuRefresher:
 		# refresh_timer.start()
 
 		print("[DEBUG]End of startRefreshSequence")
-		return True
+		return False
 
 	 
 	def __init__(self,ind):
