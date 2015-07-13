@@ -40,6 +40,7 @@ class menuRefresher:
 	#an IP is saved to this variable when it is changed. If the IP is the same, there is no point of doing other tasks like getting country etc
 	IP_buf = ""
 
+	#a buffer saving the current country
 	cur_country = ""
 
 	#a flag, whether to show label with IP in tray or not
@@ -349,7 +350,7 @@ def main():
 	ind.set_status(appindicator.IndicatorStatus.ACTIVE)
 
 
-	ind.set_icon_theme_path(os.path.join(os.environ['HOME'], 'FlagsOfCountries'))
+	ind.set_icon_theme_path(os.path.join(os.path.dirname(os.path.realpath(__file__)),'FlagsOfCountries'))
 
 	menu_refresher1 = menuRefresher(ind)
 
