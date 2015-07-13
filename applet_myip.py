@@ -40,11 +40,13 @@ class menuRefresher:
 	#an IP is saved to this variable when it is changed. If the IP is the same, there is no point of doing other tasks like getting country etc
 	IP_buf = ""
 
+	cur_country = ""
+
 	#a flag, whether to show label with IP in tray or not
-	show_label=False
+	show_label = True
 
 	#a flag, whether to show notifications or not
-	show_notifications=True
+	show_notifications = True
 
 	def change_server(self,widget,config_filename):
 		'''
@@ -101,6 +103,7 @@ class menuRefresher:
 		'''
 		self.show_label= not self.show_label
 		self.refresh_label(ind,myip)
+		self.setIndicatingMenus(myip=myip,ind=ind,onlySetMenus=True)
 
 		return True
 
@@ -109,6 +112,7 @@ class menuRefresher:
 		Toggles the notifications by changing the show_notifications flag.
 		'''
 		self.show_notifications= not self.show_notifications
+		self.setIndicatingMenus(myip=myip,ind=ind,onlySetMenus=True)
 
 		return True
 
@@ -116,30 +120,37 @@ class menuRefresher:
 		'''
 		Re-ask the IP data manually.
 		Need to clear buffer to force applet to update.
+		NOTE: Basically, that's all we need to do, the data will be refreshed on next refresh cycle, calling self.askIP directly causes strange behaviour - lots of repetitive copies of same askers.
 		'''
 		self.IP_buf = None
-		self.askIP(self.hIndicator)
+		# self.askIP(self.hIndicator)
 		
 		return True
 
-	def setIndicatingMenus(self,myip,ind):
+	def setIndicatingMenus(self,myip,ind,onlySetMenus=False):
 		"""Sets the values in menus"""
 		print("setIndicatingMenus with IP ", myip)
 
-		if myip == self.IP_buf:
-			print("[DEBUG]IP is the same")
-			GLib.idle_add(self.startRefreshSequence,ind)
-			return False
-		else:
-			self.IP_buf = myip
+		if not onlySetMenus:
+			if myip == self.IP_buf:
+				print("[DEBUG]IP is the same")
+				GLib.idle_add(self.startRefreshSequence,ind)
+				return False
+			else:
+				self.IP_buf = myip
 
 		if not myip:
 			myip = ""
 
-		print("[DEBUG]Getting country")
-		myCountry = ""
-		if myip:
-			myCountry = self.get_country(myip) #country CODE
+
+		if not onlySetMenus:
+			print("[DEBUG]Getting country")
+			myCountry = ""
+			if myip:
+				self.cur_country = myCountry = self.get_country(myip) #country CODE
+		else:
+			myCountry = self.cur_country
+
 		if myCountry:
 			myCountryName = [i for i in COUNTRIES if myCountry in i] #name of a country
 		else:
@@ -150,6 +161,7 @@ class menuRefresher:
 		else:
 			flagIconFilename = ""
 			myCountryName = ""
+
 
 
 		print("[DEBUG]Creating menu")
@@ -179,12 +191,12 @@ class menuRefresher:
 		menu.append(menu_items)        
 		menu_items.show()
 
-		menu_items = Gtk.MenuItem( "Toggle Label" )
+		menu_items = Gtk.MenuItem( "Toggle Label (" + ("ON" if self.show_label else "OFF") + ")")
 		menu_items.connect("activate",self.toggle_label,ind,myip)
 		menu.append(menu_items)        
 		menu_items.show()
 
-		menu_items = Gtk.MenuItem( "Toggle Notifications" )
+		menu_items = Gtk.MenuItem( "Toggle Notifications(" + ("ON" if self.show_notifications else "OFF") + ")" )
 		menu_items.connect("activate",self.toggle_notifications,ind,myip)
 		menu.append(menu_items)        
 		menu_items.show()
@@ -221,19 +233,20 @@ class menuRefresher:
 
 		ind.set_icon_full(flagIconFilename,myCountry)
 
-		if not myip:
-			notification_message = "Could not get IP. Connection lost."
-		else:
-			notification_message = "Your external IP has changed"
+		if not onlySetMenus:
+			if not myip:
+				notification_message = "Could not get IP. Connection lost."
+			else:
+				notification_message = "Your external IP has changed"
 
-		if self.show_notifications:
-			try:
-				subprocess.Popen(['notify-send', notification_message, \
-				"New IP: " + myip + "\nCountry: " + myCountryName])
-			except:
-				exMsg("Could not send notification. Is notify-send available in this system?")
+			if self.show_notifications:
+				try:
+					subprocess.Popen(['notify-send', notification_message, \
+					"New IP: " + myip + "\nCountry: " + myCountryName])
+				except:
+					exMsg("Could not send notification. Is notify-send available in this system?")
 
-		GLib.idle_add(self.startRefreshSequence,ind)
+			GLib.idle_add(self.startRefreshSequence,ind)
 
 		print("Menus set!")
 		return False
@@ -265,10 +278,10 @@ class menuRefresher:
 		print("askIP start")
 		#list of commandlines that are supposed to return IP as a result
 		IPgettingMethods = [
-		["dig", "+short", "myip.opendns.com", "@resolver1.opendns.com"],
-		["curl", "-s", "curlmyip.com"],
-		["curl", "-s" ,"icanhazip.com"],
-		["curl", "-s" ,"ifconfig.me"]
+		["dig", "+short", "myip.opendns.com", "@resolver1.opendns.com"]
+		,["curl", "-s", "curlmyip.com"]
+		,["curl", "-s" ,"icanhazip.com"]
+		,["curl", "-s" ,"ifconfig.me"]
 		]
 
 		def controller_getIP():
