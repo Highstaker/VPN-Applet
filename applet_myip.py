@@ -4,6 +4,9 @@
 ####other means of getting IP
 ##curl -s http://whatismijnip.nl |cut -d " " -f 5
 
+#TODO
+#remake the daemon itself to read configs and passwords from applet's folders
+
 import subprocess, os, glob
 from gi.repository import Gtk, GLib, GObject
 from gi.repository import AppIndicator3 as appindicator
@@ -13,7 +16,7 @@ import socket
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import signal
 
-CONFIG_FILES_PATH="/home/highstaker/Документы/ibvpn_openvpn/"
+CONFIG_FILES_PATH= os.path.join( os.path.dirname(os.path.realpath(__file__)) + "/VPN_configs/" )
 SIGNAL_FILE_PATH="/tmp/"
 SIGNAL_FILENAME="openVPN_aliver_command.txt"
 
@@ -218,15 +221,35 @@ class menuRefresher:
 		menu.append(menu_items)        
 		menu_items.show()
 
-		# global CONFIG_FILES
-		CONFIG_FILES = glob.glob(CONFIG_FILES_PATH + "*.ovpn")
-		CONFIG_FILES.sort()
+		#test
+		# submenu = Gtk.Menu()
+		# submenu_item = Gtk.MenuItem("Uno") 
+		# submenu.append(submenu_item)
+		# submenu_item.show()
+		# submenu_item = Gtk.MenuItem("Dos") 
+		# submenu.append(submenu_item)
+		# submenu_item.show()
+		# menu_items.set_submenu(submenu)
+		#end test
 
-		for i in CONFIG_FILES:
-			menu_items = Gtk.MenuItem( os.path.basename(i) )
-			menu_items.connect("activate",self.change_server,i)
-			menu.append(menu_items)        
-			menu_items.show()
+		for j in [o for o in os.listdir(CONFIG_FILES_PATH) if os.path.isdir(os.path.join(CONFIG_FILES_PATH,o))]:
+			# global CONFIG_FILES
+			CONFIG_FILES = glob.glob(os.path.join(CONFIG_FILES_PATH,j) + "/" + "*.ovpn")
+			CONFIG_FILES.sort()
+
+			folder_menuitem = Gtk.MenuItem(j)
+			menu.append(folder_menuitem)        
+			folder_menuitem.show()
+
+			submenu = Gtk.Menu()
+
+			for i in CONFIG_FILES:
+				menu_items = Gtk.MenuItem( os.path.basename(i) )
+				menu_items.connect("activate",self.change_server,i)
+				submenu.append(menu_items)        
+				menu_items.show()
+
+			folder_menuitem.set_submenu(submenu)
 
 		ind.set_menu(menu)
 
