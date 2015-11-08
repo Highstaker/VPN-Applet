@@ -54,7 +54,7 @@ do
 			echo "openvpn Running"
 		else 
 			echo "openvpn NOT running"
-			openvpn --config $CONFIG_FILE --auth-user-pass $PASS_FILE &
+			openvpn --config "$CONFIG_FILE" --auth-user-pass $PASS_FILE &
 		fi
 	else
 		echo "VPN disabled"
