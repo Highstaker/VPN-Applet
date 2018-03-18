@@ -17,11 +17,13 @@ import socket
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import signal
 
+SCRIPT_DIR=os.path.dirname(os.path.abspath(__file__))
+
 SIGNAL_FILE_PATH="/tmp/"
 SIGNAL_FILENAME="openVPN_aliver_command.txt"
 
 try:
-	with open("config_files_path.txt", 'r') as f:
+	with open(os.path.join(SCRIPT_DIR, "config_files_path.txt"), 'r') as f:
 		CONFIG_FILES_PATH = f.readline().strip()
 except Exception as e:
 	print("Error reading config files' path:", str(e))
