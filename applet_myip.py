@@ -7,6 +7,7 @@
 #TODO
 #remake the daemon itself to read configs and passwords from applet's folders
 
+import sys
 import subprocess, os, glob
 from gi.repository import Gtk, GLib, GObject
 from gi.repository import AppIndicator3 as appindicator
@@ -16,9 +17,16 @@ import socket
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import signal
 
-CONFIG_FILES_PATH= os.path.join( os.path.dirname(os.path.realpath(__file__)) + "/VPN_configs/" )
 SIGNAL_FILE_PATH="/tmp/"
 SIGNAL_FILENAME="openVPN_aliver_command.txt"
+
+try:
+	with open("config_files_path.txt", 'r') as f:
+		CONFIG_FILES_PATH = f.readline().strip()
+except Exception as e:
+	print("Error reading config files' path:", str(e))
+	sys.exit(1)
+
 
 def exMsg(message):
 	'''
@@ -232,13 +240,20 @@ class menuRefresher:
 		# menu_items.set_submenu(submenu)
 		#end test
 
+		configs_submenuitem = Gtk.MenuItem("configs")
+		configs_submenu = Gtk.Menu()
+		configs_submenuitem.set_submenu(configs_submenu)
+
+
+
+		# subfolders
 		for j in [o for o in os.listdir(CONFIG_FILES_PATH) if os.path.isdir(os.path.join(CONFIG_FILES_PATH,o))]:
 			# global CONFIG_FILES
 			CONFIG_FILES = glob.glob(os.path.join(CONFIG_FILES_PATH,j) + "/" + "*.ovpn")
 			CONFIG_FILES.sort()
 
 			folder_menuitem = Gtk.MenuItem(j)
-			menu.append(folder_menuitem)        
+			configs_submenu.append(folder_menuitem)
 			folder_menuitem.show()
 
 			submenu = Gtk.Menu()
@@ -250,6 +265,18 @@ class menuRefresher:
 				menu_items.show()
 
 			folder_menuitem.set_submenu(submenu)
+
+		#files
+		CONFIG_FILES = glob.glob(CONFIG_FILES_PATH + "/" + "*.ovpn")
+		CONFIG_FILES.sort()
+		for i in CONFIG_FILES:
+			menu_items = Gtk.MenuItem( os.path.basename(i) )
+			menu_items.connect("activate",self.change_server,i)
+			configs_submenu.append(menu_items)
+			menu_items.show()
+
+		menu.append(configs_submenuitem)
+		configs_submenuitem.show()
 
 		ind.set_menu(menu)
 

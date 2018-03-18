@@ -13,8 +13,8 @@ echo "All required programs are installed. Running main program."
 
 CONFIG_FILE="ibVPN_Sweden_Stockholm_1.ovpn"
 SERVER_CHANGE_COMMAND="/tmp/openVPN_aliver_command.txt"
-PASS_FILE="/home/highstaker/Документы/ibVPN_pass.txt"
-CONFIG_FILES_FOLDER="/home/highstaker/Документы/ibvpn_openvpn"
+PASS_FILE="/home/highstaker/Documents/ibVPN_pass.txt"
+CONFIG_FILES_FOLDER="/home/highstaker/Documents/ibvpn_openvpn"
 VPN_ENABLED=true
 COMMAND_VPN_STOP="stop"
 
